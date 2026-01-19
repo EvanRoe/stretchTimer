@@ -1,6 +1,8 @@
 import tkinter as tk
 import csv
 from pathlib import Path
+import simpleaudio as sa
+
 class timerApp:
     def __init__(self, root, path):
         self.root = root
@@ -37,6 +39,7 @@ class timerApp:
     def next_row(self):
         try:
             row = next(self.reader)
+            self.beep()
             self.current_title = row["position"]
             self.label_title.config(text=self.current_title)
             self.target_time = int(row["time"])
@@ -73,10 +76,13 @@ class timerApp:
         self.seconds = 0
         self.label_time.config(text="0:00")
         self.label_title.config(text="Stretch Timer")
+
+    def beep(self):
+        beep_file = Path(__file__).parent.parent / "beep.wav"
+        wave_obj = sa.WaveObject.from_wave_file(str(beep_file))
+        wave_obj.play()
                         
         
-            
-
 root = tk.Tk()
 path = Path(__file__).parent.parent / "stretches.csv"
 app = timerApp(root, path)
