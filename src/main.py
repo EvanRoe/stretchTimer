@@ -27,29 +27,40 @@ class timerApp:
         self.pause_btn = tk.Button(button_frame, text="Pause", font=("Arial", 30), command=self.toggle_pause)
         self.pause_btn.pack(side="left", padx=5)
 
+        self.label_next = tk.Label(root, text="", font=("Arial", 0))
+        self.label_next.pack()
+
         self.running = False
     
     def start(self):
         if not self.running:
             self.running = True
             self.file = open(self.path, newline="")
+            self.file2 = open(self.path, newline="")
+            self.peek = csv.DictReader(self.file2)
+            self.next_position = next(self.peek)
             self.reader = csv.DictReader(self.file)
             self.next_row()
     
     def next_row(self):
         try:
+            self.next_position = next(self.peek)
             row = next(self.reader)
-            self.beep()
             self.current_title = row["position"]
             self.label_title.config(text=self.current_title)
             self.target_time = int(row["time"])
+            if self.current_title == "rest":
+                self.label_next.config(text=self.next_position["position"], font=("Arial", 40))
+            else:
+                self.label_next.config(text="", font=("Arial", 0))
             self.seconds = 0
             self.update_timer()
         except StopIteration:
             self.file.close()
+            self.file2.close()
+            self.beep()
             self.label_title.config(text="FINISHED!")
             self.label_time.config(text="0:00")
-            self.start_btn.config(text="Restart")
             self.running = False
 
     
@@ -58,9 +69,16 @@ class timerApp:
             self.seconds += 1
             mins, secs = divmod(self.seconds, 60)
             self.label_time.config(text=f"{mins}:{secs:02d}")
+
             if self.seconds < self.target_time:
+                if self.current_title == "rest":
+                    time_left = self.target_time - self.seconds
+                    if time_left <= 2:
+                        self.beep()
+                
                 self.root.after(1000, self.update_timer)
             else:
+                self.beep()
                 self.root.after(1000, self.next_row)
     
     def toggle_pause(self):
