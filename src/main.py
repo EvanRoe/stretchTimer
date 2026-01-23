@@ -1,13 +1,25 @@
 import tkinter as tk
+from tkinter import messagebox
 import csv
 from pathlib import Path
 import simpleaudio as sa
+import sys
+import os
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 class timerApp:
     def __init__(self, root, path):
         self.root = root
         self.path = path
         self.root.title("Timer")
+
+        self.audio_player = AudioPlayer()
 
         self.label_title = tk.Label(root, text="Stretch Timer", font=("Arial", 50))
         self.label_title.pack()
@@ -96,12 +108,51 @@ class timerApp:
         self.label_title.config(text="Stretch Timer")
 
     def beep(self):
-        beep_file = Path(__file__).parent.parent / "beep.wav"
-        wave_obj = sa.WaveObject.from_wave_file(str(beep_file))
-        wave_obj.play()
+        self.audio_player.play_beep()
+
+class AudioPlayer:
+    def __init__(self):
+        self.wav_file = "beep.wav"
+        self.wav_path = resource_path(self.wav_file)
+        self._check_file_exists()
+    
+    def _check_file_exists(self):
+        if not os.path.exists(self.wav_path):
+            print(f"WARNING: Audio file not found at: {self.wav_path}")
+            try:
+                if hasattr(sys, '_MEIPASS'):
+                    temp_dir = sys._MEIPASS
+                    print(f"Files in temp directory ({temp_dir}):")
+                    for f in os.listdir(temp_dir):
+                        print(f"  - {f}")
+            except:
+                pass
+    
+    def play_beep(self):
+        try:
+            wav_path_str = str(self.wav_path)
+            if not os.path.exists(wav_path_str):
+                print(f"Cannot find audio file: {wav_path_str}")
+                self._fallback_beep()
+                return False
+            wave_obj = sa.WaveObject.from_wave_file(wav_path_str)
+            play_obj = wave_obj.play()
+        
+        except Exception as e:
+            print(f"Audio error: {e}")
+            self._fallback_beep()
+            return None
+    
+    def _fallback_beep(self):
+        try:
+            import winsound
+            winsound.Beep(1000, 200)
+            print("Used fallback beep")
+        except Exception as e:
+            print(f"Fallback also failed: {e}")
                         
         
 root = tk.Tk()
-path = Path(__file__).parent.parent / "stretches.csv"
+path = resource_path("stretches.csv")
 app = timerApp(root, path)
 root.mainloop()
